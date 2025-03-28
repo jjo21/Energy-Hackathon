@@ -90,7 +90,7 @@ for j in range(1, 7):
         plt.savefig(f'plots_kent/{aggtype} National Demand Forecast vs {dfrtype} Volume Requirements Forecast.png')
 
         plt.figure()
-        plt.scatter(aggregate(paf, 'National Demand Forecast (NDF) - GB (MW)', i)['National Demand Forecast (NDF) - GB (MW)'][:paf_min_len], tavp.iloc[:paf_min_len, j + 13])
+        plt.scatter(aggregate(paf, 'National Demand Forecast (NDF) - GB (MW)', i)['National Demand Forecast (NDF) - GB (MW)'][:paf_min_len], tavp.iloc[:paf_min_len, j + 12])
         plt.xlabel(f'{aggtype} National Demand Forecast (NDF) - GB (MW)')
         plt.ylabel(f'Ancillary Price - {dfrtype} - GB (£/MW/h)')
         plt.title(f'{aggtype} National Demand Forecast vs {dfrtype} Ancillary Price')
@@ -118,14 +118,14 @@ for j in range(1, 7):
         plt.savefig(f'plots_kent/N2EX {aggtype} Day Ahead Price vs {dfrtype} Ancillary Price.png')
 
         plt.figure()
-        plt.scatter(aggregate(tdap, 'Day Ahead Price (EPEX, local) - GB (£/MWh)', i)['Day Ahead Price (EPEX, local) - GB (£/MWh)'][:tdap_min_len], tavp.iloc[:tdap_min_len, j + 12])
+        plt.scatter(aggregate(tdap, 'Day Ahead Price (EPEX, local) - GB (£/MWh)', i)['Day Ahead Price (EPEX, local) - GB (£/MWh)'][:tdap_min_len], tavp.iloc[:tdap_min_len, j])
         plt.xlabel(f'{aggtype} Day Ahead Price (EPEX, local) - GB (£/MWh)')
         plt.ylabel(f'Volume Requirements Forecast - {dfrtype} - GB (MW)')
         plt.title(f'EPEX {aggtype} Day Ahead Price vs {dfrtype} Volume Requirements Forecast')
         plt.savefig(f'plots_kent/EPEX {aggtype} Day Ahead Price vs {dfrtype} Volume Requirements Forecast.png')
 
         plt.figure()
-        plt.scatter(aggregate(tdap, 'Day Ahead Price (N2EX, local) - GB (£/MWh)', i)['Day Ahead Price (N2EX, local) - GB (£/MWh)'][:tdap_min_len], tavp.iloc[:tdap_min_len, j + 12])
+        plt.scatter(aggregate(tdap, 'Day Ahead Price (N2EX, local) - GB (£/MWh)', i)['Day Ahead Price (N2EX, local) - GB (£/MWh)'][:tdap_min_len], tavp.iloc[:tdap_min_len, j])
         plt.xlabel(f'{aggtype} Day Ahead Price (N2EX, local) - GB (£/MWh)')
         plt.ylabel(f'Volume Requirements Forecast - {dfrtype} - GB (MW)')
         plt.title(f'N2EX {aggtype} Day Ahead Price vs {dfrtype} Volume Requirements Forecast')
