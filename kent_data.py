@@ -2,6 +2,8 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import kent_functions as kf
+import seaborn as sns
 
 avp = pd.read_csv('2023\Ancillary Volumes & Prices (4H).csv')
 dap = pd.read_csv('2023\Day-Ahead Price (1H).csv').dropna()
@@ -22,112 +24,20 @@ paf['GMT Time'] = pd.to_datetime(paf['GMT Time'], dayfirst=True)
 paf['Hour'] = paf['GMT Time'].dt.hour
 paf['Day'] = paf['GMT Time'].dt.month
 
-#0 = mean, 1 = max, 2 = change, 3 = std, 4 = range, 5 = maxchange
-def aggregate(df, value_col, agg_type=0):
-    df = df.copy()
-    df.set_index('GMT Time', inplace=True)
-    groups = df[[value_col]].resample('4h', label='right', closed="right", origin="epoch", offset='3h')
-    if agg_type == 0:
-        df_agg = groups.mean()
-    elif agg_type == 1:
-        df_agg = groups.max()
-    elif agg_type == 2:
-        df_agg = groups.agg(lambda x: x.iloc[-1] - x.iloc[0])
-    elif agg_type == 3:
-        df_agg = groups.std()
-    elif agg_type == 4:
-        df_agg = groups.agg(lambda x: x.max() - x.min())
-    elif agg_type == 5:
-        df_agg = groups.agg(lambda x: np.max(np.abs(np.diff(x))) if len(x) >= 2 else np.nan)
-    else:
-        raise ValueError("Unsupported aggregation type")
-    return df_agg.reset_index()
+#%%
+volume_cols = tavp.columns[1:7]   # Columns 1–6: Volumes
+price_cols = tavp.columns[13:19]  # Columns 13–18: Ancillary Prices
+aggregated_ndf = kf.aggregate_all(paf, 'National Demand Forecast (NDF) - GB (MW)') #aggregated NDF using different methods
+aggregated_EPEX = kf.aggregate_all(tdap, 'Day Ahead Price (EPEX, local) - GB (£/MWh)') #aggregated EPEX using different methods
+aggregated_N2EX = kf.aggregate_all(tdap, 'Day Ahead Price (N2EX, local) - GB (£/MWh)') #aggregated N2EX using different methods
 
-#print(aggregate(tdap, 'Day Ahead Price (EPEX, local) - GB (£/MWh)', 'mean'))
+volume_labels = [f'Vol {x}' for x in ['DC-H', 'DC-L', 'DR-H', 'DR-L', 'DM-H', 'DM-L']]
+price_labels = [f'Price {x}' for x in ['DC-H', 'DC-L', 'DR-H', 'DR-L', 'DM-H', 'DM-L']]
 
-print(tavp.head())
-
-paf_min_len = min(len(paf), len(tavp))
-tdap_min_len = min(len(tdap), len(tavp))
-for j in range(1, 7):
-    if j == 1:
-        dfrtype = 'DC-H'
-    elif j == 2:
-        dfrtype = 'DC-L'
-    elif j == 3:
-        dfrtype = 'DR-H'
-    elif j == 4:
-        dfrtype = 'DR-L'
-    elif j == 5:
-        dfrtype = 'DM-H'
-    elif j == 6:
-        dfrtype = 'DM-L'
-    for i in range(6):
-        if i == 0:
-            aggtype = 'Mean'
-            dfrtype2 = 'DC-H'
-        elif i == 1:
-            aggtype = 'Max'
-            dfrtype2 = 'DC-L'
-        elif i == 2:
-            aggtype = 'Change in'
-            dfrtype2 = 'DR-H'
-        elif i == 3:
-            aggtype = 'Std Dev of'
-            dfrtype2 = 'DR-L'
-        elif i == 4:
-            aggtype = 'Range of'
-            dfrtype2 = 'DM-H'
-        elif i == 5:
-            aggtype = 'Max Change in'
-            dfrtype2 = 'DM-L'
-        
-        plt.figure()
-        plt.scatter(aggregate(paf, 'National Demand Forecast (NDF) - GB (MW)', i)['National Demand Forecast (NDF) - GB (MW)'][:paf_min_len], tavp.iloc[:paf_min_len, j])
-        plt.xlabel(f'{aggtype} National Demand Forecast (NDF) - GB (MW)')
-        plt.ylabel(f'Volume Requirements Forecast - {dfrtype} - GB (MW)')
-        plt.title(f'{aggtype} National Demand Forecast vs {dfrtype} Volume Requirements Forecast')
-        plt.savefig(f'plots_kent/{aggtype} National Demand Forecast vs {dfrtype} Volume Requirements Forecast.png')
-
-        plt.figure()
-        plt.scatter(aggregate(paf, 'National Demand Forecast (NDF) - GB (MW)', i)['National Demand Forecast (NDF) - GB (MW)'][:paf_min_len], tavp.iloc[:paf_min_len, j + 12])
-        plt.xlabel(f'{aggtype} National Demand Forecast (NDF) - GB (MW)')
-        plt.ylabel(f'Ancillary Price - {dfrtype} - GB (£/MW/h)')
-        plt.title(f'{aggtype} National Demand Forecast vs {dfrtype} Ancillary Price')
-        plt.savefig(f'plots_kent/{aggtype} National Demand Forecast vs {dfrtype} Ancillary Price.png')
-
-        plt.figure()
-        plt.scatter(tavp.iloc[:, j], tavp.iloc[:, i + 13])
-        plt.xlabel(f'Volume Requirements Forecast - {dfrtype} - GB (MW)')
-        plt.ylabel(f'Ancillary Price - {dfrtype2} - GB (£/MW/h)')
-        plt.title(f'{dfrtype} Volume Requirements Forecast vs {dfrtype2} Ancillary Price')
-        plt.savefig(f'plots_kent/{dfrtype} Volume Requirements Forecast vs {dfrtype2} Ancillary Price.png')
-
-        plt.figure()
-        plt.scatter(aggregate(tdap, 'Day Ahead Price (EPEX, local) - GB (£/MWh)', i)['Day Ahead Price (EPEX, local) - GB (£/MWh)'][:tdap_min_len], tavp.iloc[:tdap_min_len, j + 12])
-        plt.xlabel(f'{aggtype} Day Ahead Price (EPEX, local) - GB (£/MWh)')
-        plt.ylabel(f'Ancillary Price - {dfrtype} - GB (£/MW/h)')
-        plt.title(f'EPEX {aggtype} Day Ahead Price vs {dfrtype} Ancillary Price')
-        plt.savefig(f'plots_kent/EPEX {aggtype} Day Ahead Price vs {dfrtype} Ancillary Price.png')
-
-        plt.figure()
-        plt.scatter(aggregate(tdap, 'Day Ahead Price (N2EX, local) - GB (£/MWh)', i)['Day Ahead Price (N2EX, local) - GB (£/MWh)'][:tdap_min_len], tavp.iloc[:tdap_min_len, j + 12])
-        plt.xlabel(f'{aggtype} Day Ahead Price (N2EX, local) - GB (£/MWh)')
-        plt.ylabel(f'Ancillary Price - {dfrtype} - GB (£/MW/h)')
-        plt.title(f'N2EX {aggtype} Day Ahead Price vs {dfrtype} Ancillary Price')
-        plt.savefig(f'plots_kent/N2EX {aggtype} Day Ahead Price vs {dfrtype} Ancillary Price.png')
-
-        plt.figure()
-        plt.scatter(aggregate(tdap, 'Day Ahead Price (EPEX, local) - GB (£/MWh)', i)['Day Ahead Price (EPEX, local) - GB (£/MWh)'][:tdap_min_len], tavp.iloc[:tdap_min_len, j])
-        plt.xlabel(f'{aggtype} Day Ahead Price (EPEX, local) - GB (£/MWh)')
-        plt.ylabel(f'Volume Requirements Forecast - {dfrtype} - GB (MW)')
-        plt.title(f'EPEX {aggtype} Day Ahead Price vs {dfrtype} Volume Requirements Forecast')
-        plt.savefig(f'plots_kent/EPEX {aggtype} Day Ahead Price vs {dfrtype} Volume Requirements Forecast.png')
-
-        plt.figure()
-        plt.scatter(aggregate(tdap, 'Day Ahead Price (N2EX, local) - GB (£/MWh)', i)['Day Ahead Price (N2EX, local) - GB (£/MWh)'][:tdap_min_len], tavp.iloc[:tdap_min_len, j])
-        plt.xlabel(f'{aggtype} Day Ahead Price (N2EX, local) - GB (£/MWh)')
-        plt.ylabel(f'Volume Requirements Forecast - {dfrtype} - GB (MW)')
-        plt.title(f'N2EX {aggtype} Day Ahead Price vs {dfrtype} Volume Requirements Forecast')
-        plt.savefig(f'plots_kent/N2EX {aggtype} Day Ahead Price vs {dfrtype} Volume Requirements Forecast.png')
-
+kf.corr_grid(tavp, tavp, volume_cols, price_cols, volume_labels, price_labels, header="Volume Forecasts vs Ancillary Prices", filename='plots_kent/volume_price_grid.png')
+kf.corr_grid(aggregated_ndf, tavp, aggregated_ndf.columns[1:], volume_cols, aggregated_ndf.columns[1:], volume_labels, header="Aggregated NDF vs Volume Forecasts", filename='plots_kent/ndf_volume_grid.png')
+kf.corr_grid(aggregated_ndf, tavp, aggregated_ndf.columns[1:], price_cols, aggregated_ndf.columns[1:], price_labels, header="Aggregated NDF vs Ancillary Prices", filename='plots_kent/ndf_price_grid.png')
+kf.corr_grid(aggregated_EPEX, tavp, aggregated_EPEX.columns[1:], volume_cols, aggregated_EPEX.columns[1:], volume_labels, header="Aggregated EPEX Day-Ahead Price vs Volume Forecasts", filename='plots_kent/epex_volume_grid.png')
+kf.corr_grid(aggregated_EPEX, tavp, aggregated_EPEX.columns[1:], price_cols, aggregated_EPEX.columns[1:], price_labels, header="Aggregated EPEX Day-Ahead Price vs Ancillary Prices", filename='plots_kent/epex_price_grid.png')
+kf.corr_grid(aggregated_N2EX, tavp, aggregated_N2EX.columns[1:], volume_cols, aggregated_N2EX.columns[1:], volume_labels, header="Aggregated N2EX Day-Ahead Price vs Volume Forecasts", filename='plots_kent/n2ex_volume_grid.png')
+kf.corr_grid(aggregated_N2EX, tavp, aggregated_N2EX.columns[1:], price_cols, aggregated_N2EX.columns[1:], price_labels, header="Aggregated N2EX Day-Ahead Price vs Ancillary Prices", filename='plots_kent/n2ex_price_grid.png')
