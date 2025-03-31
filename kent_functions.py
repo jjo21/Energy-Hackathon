@@ -80,3 +80,18 @@ def aggregate_all(df, value_col):
     df_agg = pd.concat([mean, max_, change, std, range_, max_change], axis=1).reset_index()
     
     return df_agg
+
+def get_efa_block(dt):
+    hour = dt.hour
+    if hour >= 23 or hour < 3:
+        return 1
+    elif 3 <= hour < 7:
+        return 2
+    elif 7 <= hour < 11:
+        return 3
+    elif 11 <= hour < 15:
+        return 4
+    elif 15 <= hour < 19:
+        return 5
+    elif 19 <= hour < 23:
+        return 6
