@@ -165,3 +165,11 @@ def lag_plot_matrix(series, freq, max_lag, label, header, figsize=(14, 10), file
     if filename:
         plt.savefig(filename)
     plt.close()
+
+def time_filters(df):
+    df['EFA'] = df['GMT Time'].apply(get_efa_block)
+    df['Quarter'] = df['GMT Time'].dt.quarter
+    df['Day'] = df['GMT Time'].dt.dayofweek
+    df['Weekend'] = np.where(df['Day'] < 5, 0, 1)
+    df['Post EAC'] = np.where(df['GMT Time'] < pd.Timestamp('2023-11-03'), 0, 1)
+    return df
