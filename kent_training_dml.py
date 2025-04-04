@@ -35,8 +35,8 @@ drift = drift.drop(columns=['Unnamed: 0'])
 aggregated_ndf = kf.aggregate_all(paf, 'National Demand Forecast (NDF) - GB (MW)')
 aggregated_EPEX = kf.aggregate_all(tdap, 'Day Ahead Price (EPEX, local) - GB (£/MWh)')
 
-aggregated_ndf = aggregated_ndf.drop(columns=['Change', 'Range'])
-aggregated_EPEX = aggregated_EPEX.drop(columns=['Change', 'Range', 'Max Change'])
+#aggregated_ndf = aggregated_ndf.drop(columns=['Change', 'Range', 'Max Change'])
+#aggregated_EPEX = aggregated_EPEX.drop(columns=['Change', 'Range', 'Max Change'])
 
 for i in range(1, len(aggregated_ndf.columns)):
     colname = aggregated_ndf.columns[i]
@@ -48,7 +48,6 @@ for i in range(1, len(aggregated_EPEX.columns)):
 
 dch = tavp.copy()
 dch = dch.drop(dch.columns[7:], axis=1)
-dch = dch.drop(dch.columns[1:3], axis=1)
 dch = dch.merge(aggregated_EPEX, how='left', on='GMT Time')
 dch = dch.merge(aggregated_ndf, how='left', on='GMT Time')
 dch = dch.merge(drift, how='left', on='GMT Time')
@@ -56,9 +55,8 @@ dch = kf.time_filters(dch)
 #dch = dch[dch['Post EAC'] == 1]
 #for i in range(1, 8):
 #    dch[f'Day Lag {i}'] = tavp['Ancillary Price - DC-H - GB (£/MW/h)'].shift(i*6).copy()
-dch['DC-H Price'] = tavp['Ancillary Price - DC-H - GB (£/MW/h)'].copy()
-dch['Trend'] = np.where(dch['DC-H Price'] - dch['DC-H Price'].shift(1) > 0, 1, 0)
-print(dch)
+dch['DM-L Price'] = tavp['Ancillary Price - DM-L - GB (£/MW/h)'].copy()
+dch['Trend'] = np.where(dch['DM-L Price'] - dch['DM-L Price'].shift(1) > 0, 1, 0)
 
 target1 = 'Trend'
 features = dch.columns[1:-2].to_list()
@@ -78,8 +76,11 @@ print(f'RMSE: {rmse:.2f}')
 print(f'R²: {r2:.2f}')
 #print(y_test)
 
-target2 = 'DC-H Price'
+target2 = 'DM-L Price'
 y = dch[target2]
+valid_mask = (~y.isna()) & (~np.isinf(y))
+X = X[valid_mask]
+y = y[valid_mask]
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
 model2 = XGBRegressor(n_estimators=500, learning_rate=0.05)
 model2.fit(X_train, y_train)
@@ -91,5 +92,5 @@ plt.figure(figsize=(10, 4))
 plt.plot(y_test.values, label='Actual')
 plt.plot(y_pred, label='Predicted')
 plt.legend()
-plt.title(f'Actual vs Predicted DC-H Prices RMSE: {rmse:.2f}')
+plt.title(f'Actual vs Predicted DM-L Prices RMSE: {rmse:.2f} R²: {r2:.2f}')
 plt.show()
