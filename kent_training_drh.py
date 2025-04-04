@@ -76,6 +76,11 @@ print(f'RMSE: {rmse:.2f}')
 print(f'R²: {r2:.2f}')
 #print(y_test)
 
+plt.figure(figsize=(10, 4))
+plt.bar(range(len(model.feature_importances_)), model.feature_importances_)
+plt.title(f'DR-H Trend Feature Importances RMSE: {rmse:.2f}')
+plt.savefig('kent_result_plots/drh_trend_feature_importances.png')
+
 target2 = 'DR-H Price'
 y = dch[target2]
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
@@ -86,8 +91,13 @@ rmse = mean_squared_error(y_test, y_pred)
 r2 = r2_score(y_test, y_pred)
 
 plt.figure(figsize=(10, 4))
+plt.bar(range(len(model2.feature_importances_)), model2.feature_importances_)
+plt.title('DR-H Price Feature Importances')
+plt.savefig('kent_result_plots/drh_price_feature_importances.png')
+
+plt.figure(figsize=(10, 4))
 plt.plot(y_test.values, label='Actual')
 plt.plot(y_pred, label='Predicted')
 plt.legend()
 plt.title(f'Actual vs Predicted DR-H Prices RMSE: {rmse:.2f} R²: {r2:.2f}')
-plt.show()
+plt.savefig('kent_result_plots/drh_price_predictions.png')
