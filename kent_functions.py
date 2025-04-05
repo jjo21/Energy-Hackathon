@@ -26,18 +26,19 @@ def corr_grid(df1, df2, col1, col2, label1, label2, header=None, figsize=(18, 18
             x = x[:min_len]
             y = y[:min_len]
             corr = x.corr(y)
+            r2 = corr ** 2
 
             # Scatter plot
             ax.scatter(x, y, s=10, alpha=0.5)
 
             # Title with correlation
-            ax.set_title(f'r = {corr:.2f}', fontsize=13, pad=1)
+            ax.set_title(f'r = {corr:.2f}, r^2 = {r2:.2f}', fontsize=13, pad=1)
 
             # Border color based on absolute correlation
-            abs_corr = abs(corr)
-            if abs_corr > 0.7:
+            abs_r2 = abs(r2)
+            if abs_r2 > 0.7:
                 color = 'red'
-            elif abs_corr > 0.3:
+            elif abs_r2 > 0.3:
                 color = 'orange'
             else:
                 color = 'green'
@@ -140,16 +141,17 @@ def lag_plot_matrix(series, freq, max_lag, label, header, figsize=(14, 10), file
             aligned = pd.concat([lagged, series[col]], axis=1).dropna()
             x, y = aligned.iloc[:, 0], aligned.iloc[:, 1]
             r = x.corr(y)
+            r2 = r ** 2
 
             ax = axs[i, j]
             ax.scatter(x, y, alpha=0.5, s=10)
 
-            color = 'red' if abs(r) > 0.7 else 'orange' if abs(r) > 0.3 else 'green'
+            color = 'red' if abs(r2) > 0.7 else 'orange' if abs(r2) > 0.3 else 'green'
             for spine in ax.spines.values():
                 spine.set_edgecolor(color)
                 spine.set_linewidth(2)
 
-            ax.set_title(f'r = {r:.2f}', fontsize=13, pad=1)
+            ax.set_title(f'r = {r:.2f}, r^2 = {r2:.2f}', fontsize=13, pad=1)
             #ax.set_title(f'Lag {lag} (r = {r:.2f})', fontsize=9)
             ax.set_xticks([])
             ax.set_yticks([])
